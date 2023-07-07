@@ -191,11 +191,11 @@ module.exports = class Hyperdrive extends ReadyResource {
     return this.blobs
   }
 
-  async get (name) {
-    const node = await this.entry(name)
+  async get (name, opts) {
+    const node = await this.entry(name, opts)
     if (!node?.value.blob) return null
     await this.getBlobs()
-    return this.blobs.get(node.value.blob)
+    return this.blobs.get(node.value.blob, opts)
   }
 
   async put (name, buf, { executable = false, metadata = null } = {}) {
@@ -272,7 +272,12 @@ module.exports = class Hyperdrive extends ReadyResource {
   async _entry (name, opts) {
     if (typeof name !== 'string') return name
 
-    return this.db.get(std(name, false), { ...opts, keyEncoding })
+    try {
+      return await this.db.get(std(name, false), { ...opts, keyEncoding })
+    } catch (err) {
+      if (err.message === 'Block not available locally') return null
+      throw err
+    }
   }
 
   async exists (name) {
