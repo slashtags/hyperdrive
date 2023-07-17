@@ -1217,6 +1217,35 @@ test('non-existing follow entry', async function (t) {
   await drive.close()
 })
 
+test('encryptionKey', async function (t) {
+  const encryptionKey = Buffer.alloc(32).fill(0)
+
+  const storage = createTmpDir(t)
+
+  const store = new Corestore(storage)
+  const writer = new Hyperdrive(store, { encryptionKey })
+
+  await writer.ready()
+  t.alike(writer.core.encryptionKey, encryptionKey)
+  t.alike(writer.blobs.core.encryptionKey, encryptionKey)
+
+  await writer.close()
+
+  {
+    const store = new Corestore(storage)
+
+    const reader = new Hyperdrive(store, writer.key, { encryptionKey })
+
+    await reader.ready()
+    t.alike(reader.core.encryptionKey, encryptionKey)
+
+    await reader.getBlobs()
+    t.alike(reader.blobs.core.encryptionKey, encryptionKey)
+
+    await reader.close()
+  }
+})
+
 async function testenv (teardown) {
   const corestore = new Corestore(RAM)
   await corestore.ready()
